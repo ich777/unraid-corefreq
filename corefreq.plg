@@ -115,7 +115,7 @@ if [ ! -z "$(lsmod | grep "corefreqk")" ]; then
 else
   echo
   echo "---------------------Installing CoreFreq, please wait...!---------------------"
-  install 2>/dev/null
+  install >/dev/null
   echo
   echo "--------------------Installation of CoreFreq successful-----------------------"
   echo
@@ -128,7 +128,7 @@ if [ ! -z "$(pidof corefreqd)" ]; then
 else
   echo
   echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
-  start 2>/dev/null
+  start >/dev/null
   echo
 fi
 
