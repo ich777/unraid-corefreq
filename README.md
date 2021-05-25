@@ -1,2 +1,0 @@
-# unraid-corefreq
-
