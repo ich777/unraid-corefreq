@@ -102,6 +102,7 @@ modprobe corefreqk
 
 start_daemon() {
 #Start CoreFreq Daemon
+corefreqd &amp;
 }
 
 #Check if CoreFreq is already downloaded
