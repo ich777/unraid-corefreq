@@ -1,0 +1,166 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "CoreFreq">
+  <!ENTITY author    "ich777">
+  <!ENTITY version   "2021.05.25">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
+  <!ENTITY pluginURL "&gitURL;/corefreq.plg">
+  <!ENTITY plugin    "/boot/config/plugins/corefreq">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/CoreFreq">
+]>
+
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.9.2">
+
+<CHANGES>
+
+###2021.05.25
+- Initial release
+
+</CHANGES>
+
+<FILE Name="&emhttp;/README.md">
+<INLINE>
+**CoreFreq**
+
+CoreFreq is a CPU low level monitoring software designed for x86_64-Processors. You can show Package and Core temps, Hot sensor, Vcore, RAM,... As a bonus you can toggle SpeedStep, Clock modulation, Turbo boost, C-States demotion, C1E,... It has also a built in stress test and much much more.  
+You can get more details here: https://github.com/cyring/CoreFreq
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash">
+<INLINE>
+
+KERNEL_V="$(uname -r)"
+PACKAGE="corefreq"
+DL_URL="https://github.com/ich777/unraid-plugins-repo/releases/download/$KERNEL_V"
+
+#Determine CPU manufacturer
+VENDOR=$(lscpu | awk '/Vendor ID/{print $3}')
+if [ "${VENDOR}" == "GenuineIntel" ]; then
+  VENDOR="INTEL"
+elif [ "${VENDOR}" == "AuthenticAMD" ]; then
+   VENDOR="AMD"
+else
+ echo "---Unknown CPU vendor: ${VENDOR}, only Intel and AMD are supported!---"
+ exit 1
+fi
+
+#Wait for Network and timeout after 30 seconds
+HOST="8.8.8.8"
+for i in {1..10}; do
+  ping -c1 $HOST &amp;> /dev/null &amp;&amp; break;
+done
+
+if [ ! -d "&plugin;/packages/${KERNEL_V%%-*}" ]; then
+  mkdir -p "&plugin;/packages/${KERNEL_V%%-*}"
+fi
+
+#Check for old packages
+rm -rf $(ls -d &plugin;/packages/* | grep -v "${KERNEL_V%%-*}")
+
+if [ ! -f "&plugin;/CoreFreq.png" ]; then
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/CoreFreq.png" "https://raw.githubusercontent.com/ich777/docker-templates/master/ich777/images/corefreq.png"
+fi
+
+download() {
+#Download CoreFreq
+if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-1.txz" ; then
+  if [ "$(md5sum "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" | cut -d ' ' -f1)" != "$(wget -qO- "${DL_URL}/${PACKAGE}_${VENDOR}1.txz.md5" | cut -d ' ' -f1)" ]; then
+    echo
+    echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
+    echo "--------------------------------CHECKSUM ERROR!---------------------------------"
+    exit 1
+  fi
+  echo
+  echo "--------------Successfully downloaded CoreFreq, please wait...!----------------"
+else
+  echo
+  echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
+  echo "--------------------------Can't download CoreFreq------------------------------"
+  exit 1
+fi
+}
+
+check() {
+if [ ! -f "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" ]; then
+  echo
+  echo "---------------------Downloading CoreFreq, please wait...!--------------------"
+  echo "----------This could take some time, please don't close this window!----------"
+  download
+else
+  echo
+  echo "---------------------------CoreFreq found locally!----------------------------"
+fi
+}
+
+install() {
+#Install CoreFreq
+/sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz"
+depmod -a
+modprobe corefreqk
+}
+
+start_daemon() {
+#Start CoreFreq Daemon
+corefreqd &
+}
+
+#Check if CoreFreq is already downloaded
+check
+
+if [ ! -z "$(lsmod | grep "corefreqk")" ]; then
+  modprobe corefreqk
+  echo
+  echo "----------------Nothing to do, CoreFreq is already installed!-----------------"
+  echo
+else
+  echo
+  echo "---------------------Installing CoreFreq, please wait...!---------------------"
+  install > /dev/null
+  echo
+  echo "--------------------Installation of CoreFreq successful-----------------------"
+  echo
+fi
+
+if [ ! -z "$(pidof corefreqd)" ]; then
+  echo
+  echo "--------------Nothing to do, CoreFreq Daemon is already started!--------------"
+  echo
+else
+  echo
+  echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
+  start > /dev/null
+  echo
+fi
+
+#Install icon
+if [ ! -f "&emhttp;/images/CoreFreq.png" ]; then
+  if [ ! -d "&emhttp;/images" ]; then
+    mkdir -p &emhttp;/images
+  fi
+  cp &plugin;/CoreFreq.png &emhttp;/images/
+fi
+
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+
+echo "------------------------------------"
+echo "-------Uninstalling CoreFreq--------"
+echo "------------------------------------"
+# Remove plugin related files
+kill "$(pidof corefreqd)"
+modprobe -rf corefreqk
+rm -rf &emhttp;
+rm -rf &plugin;
+echo
+echo "------------------------------------------------------------------------"
+echo "-----------CoreFreq uninstalled, please reboot your server!-------------"
+echo "------------------------------------------------------------------------"
+echo
+
+</INLINE>
+</FILE>
+</PLUGIN>
