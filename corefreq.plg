@@ -97,11 +97,8 @@ install() {
 #Install CoreFreq
 /sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz"
 depmod -a
+sleep 0.5
 modprobe corefreqk
-}
-
-start_daemon() {
-#Start CoreFreq Daemon
 }
 
 #Check if CoreFreq is already downloaded
@@ -128,7 +125,6 @@ if [ ! -z "$(pidof corefreqd)" ]; then
 else
   echo
   echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
-  start
   echo
 fi
 
