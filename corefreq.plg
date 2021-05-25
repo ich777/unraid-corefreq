@@ -96,13 +96,13 @@ fi
 install() {
 #Install CoreFreq
 /sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz"
-depmod -a
-modprobe corefreqk
+/sbin/depmod -a
+/sbin/modprobe corefreqk
 }
 
 start_daemon() {
 #Start CoreFreq Daemon
-corefreqd &amp;
+nohup /usr/bin/corefreqd &amp;>/dev/null &amp;
 }
 
 #Check if CoreFreq is already downloaded
