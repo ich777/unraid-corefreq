@@ -28,6 +28,7 @@ It has also a built in stress test and much much more.
 Open up a unRAID Terminal and type in 'corefreq-cli' (without quotes), hit "F2" to open up the menu inside CoreFreq.  
 
 Please note that not every combination of CPU and motherboard is supported!  
+Intel Systems: It is recommended that you append 'nmi_watchdog=0' (without qutoes) for better accuracy to your syslinux configuration.  
 You can get more details here: https://github.com/cyring/CoreFreq
 </INLINE>
 </FILE>
