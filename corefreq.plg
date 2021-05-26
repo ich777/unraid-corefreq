@@ -103,6 +103,7 @@ install() {
 start_daemon() {
 #Start CoreFreq Daemon
 #Not working, put your code here
+echo "1"
 #nohup /usr/bin/corefreqd &amp;>/dev/null &amp;
 }
 
