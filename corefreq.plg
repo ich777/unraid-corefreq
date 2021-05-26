@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2021.05.25">
+  <!ENTITY version   "2021.05.26">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
   <!ENTITY plugin    "/boot/config/plugins/corefreq">
@@ -13,7 +13,7 @@
 
 <CHANGES>
 
-###2021.05.25
+###2021.05.26
 - Initial release
 
 </CHANGES>
@@ -22,7 +22,12 @@
 <INLINE>
 **CoreFreq**
 
-CoreFreq is a CPU low level monitoring software designed for x86_64-Processors. You can show Package and Core temps, Hot sensor, Vcore, RAM,... As a bonus you can toggle SpeedStep, Clock modulation, Turbo boost, C-States demotion, C1E,... It has also a built in stress test and much much more.  
+CoreFreq is a CPU low level monitoring software designed for x86_64-Processors. You can show Package and Core temps, Hot sensor, Vcore, RAM,...  
+You can also toggle SpeedStep, Clock modulation, Turbo boost, C-States demotion, C1E,...  
+It has also a built in stress test and much much more.  
+Open up a unRAID Terminal and type in 'corefreq-cli' (without quotes), hit F1 to open up the menu inside CoreFreq.  
+
+Please note that not every combination of CPU and motherboard is supported!  
 You can get more details here: https://github.com/cyring/CoreFreq
 </INLINE>
 </FILE>
@@ -100,11 +105,17 @@ install() {
 /sbin/modprobe corefreqk
 }
 
+patch() {
+#Patching files and creating necessary direcotries/symlinks
+if [ ! -d /root/.config/CoreFreq ]; then
+  mkdir -p /root/.config/CoreFreq
+fi
+ln -s &plugin;/corefreq.cfg /root/.config/CoreFreq/corefreq.cfg
+}
+
 start_daemon() {
 #Start CoreFreq Daemon
-#Not working, put your code here
-echo "1"
-#nohup /usr/bin/corefreqd &amp;>/dev/null &amp;
+echo "/usr/bin/corefreqd" | at now
 }
 
 #Check if CoreFreq is already downloaded
@@ -129,6 +140,7 @@ if [ ! -z "$(pidof corefreqd)" ]; then
   echo
 else
   echo
+  patch >/dev/null
   echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
   start_daemon >/dev/null
   echo
@@ -152,7 +164,7 @@ echo "------------------------------------"
 echo "-------Uninstalling CoreFreq--------"
 echo "------------------------------------"
 # Remove plugin related files
-kill "$(pidof corefreqd)"
+kill $(pidof corefreqd)
 modprobe -rf corefreqk
 rm -rf &emhttp;
 rm -rf &plugin;
