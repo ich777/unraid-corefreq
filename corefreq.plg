@@ -25,7 +25,7 @@
 CoreFreq is a CPU low level monitoring software designed for x86_64-Processors. You can show Package and Core temps, Hot sensor, Vcore, RAM,...  
 You can also toggle SpeedStep, Clock modulation, Turbo boost, C-States demotion, C1E,...  
 It has also a built in stress test and much much more.  
-Open up a unRAID Terminal and type in 'corefreq-cli' (without quotes), hit F1 to open up the menu inside CoreFreq.  
+Open up a unRAID Terminal and type in 'corefreq-cli' (without quotes), hit "F2" to open up the menu inside CoreFreq.  
 
 Please note that not every combination of CPU and motherboard is supported!  
 You can get more details here: https://github.com/cyring/CoreFreq
