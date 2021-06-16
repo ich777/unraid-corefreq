@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2021.05.26a">
+  <!ENTITY version   "2021.06.16">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
   <!ENTITY plugin    "/boot/config/plugins/corefreq">
@@ -12,6 +12,9 @@
 <PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2021.06.16
+- Search for latest CoreFreq version on boot and update it if a newer version is found
 
 ###2021.05.26
 - Initial release
@@ -38,7 +41,7 @@ You can get more details here: https://github.com/cyring/CoreFreq
 
 KERNEL_V="$(uname -r)"
 PACKAGE="corefreq"
-DL_URL="https://github.com/ich777/unraid-plugins-repo/releases/download/$KERNEL_V"
+DL_URL="https://github.com/ich777/unraid-corefreq/releases/download/$KERNEL_V"
 
 #Determine CPU manufacturer
 VENDOR=$(lscpu | awk '/Vendor ID/{print $3}')
@@ -57,21 +60,44 @@ for i in {1..10}; do
   ping -c1 $HOST &amp;> /dev/null &amp;&amp; break;
 done
 
+#Get latest version from CoreFreq and create directory
+LAT_V="$(wget -qO- https://api.github.com/repos/ich777/unraid-corefreq/releases/tags/${KERNEL_V} | jq -r '.assets[].name' | grep 'corefreq_'${VENDOR}'' | grep -E -v '\.md5$' | cut -d '-' -f2 | sort -V | tail -1)"
+
 if [ ! -d "&plugin;/packages/${KERNEL_V%%-*}" ]; then
   mkdir -p "&plugin;/packages/${KERNEL_V%%-*}"
+  CUR_V=""
+else
+  CUR_V="$(ls &plugin;/packages/${KERNEL_V%%-*} | cut -d '-' -f2)"
+fi
+
+#Check if version where fetched correctly
+if [ -z "$LAT_V" ]; then
+  if [ -z "CUR_V" ]; then
+    echo
+    echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
+    echo "---Something went horribly wrong, please contact the developer of the plugin!---"
+    echo
+    exit 1
+  else
+    LAT_V="${CUR_V}"
+    echo
+    echo "---Can't get latest version from Corefreq, using installed version v$CUR_V!---"
+    echo
+  fi
 fi
 
 #Check for old packages
 rm -rf $(ls -d &plugin;/packages/* | grep -v "${KERNEL_V%%-*}")
+rm -rf $(ls -d &plugin;/packages/${KERNEL_V%%-*}/* | grep -v "${LAT_V}")
 
 if [ ! -f "&plugin;/CoreFreq.png" ]; then
   wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/CoreFreq.png" "https://raw.githubusercontent.com/ich777/docker-templates/master/ich777/images/corefreq.png"
 fi
-
+https://github.com/ich777/unraid-corefreq/releases/download/5.10.28-Unraid/corefreq_INTEL-1.86.5-x86_64-1.txz
 download() {
 #Download CoreFreq
-if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-1.txz" ; then
-  if [ "$(md5sum "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" | cut -d ' ' -f1)" != "$(wget -qO- "${DL_URL}/${PACKAGE}_${VENDOR}-1.txz.md5" | cut -d ' ' -f1)" ]; then
+if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ; then
+  if [ "$(md5sum "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" | cut -d ' ' -f1)" != "$(wget -qO- "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz.md5" | cut -d ' ' -f1)" ]; then
     echo
     echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
     echo "--------------------------------CHECKSUM ERROR!---------------------------------"
@@ -88,20 +114,20 @@ fi
 }
 
 check() {
-if [ ! -f "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz" ]; then
+if [ ! -f "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ]; then
   echo
-  echo "---------------------Downloading CoreFreq, please wait...!--------------------"
+  echo "----------------Downloading CoreFreq v${LAT_V}, please wait...!---------------"
   echo "----------This could take some time, please don't close this window!----------"
   download
 else
   echo
-  echo "---------------------------CoreFreq found locally!----------------------------"
+  echo "----------------------CoreFreq v${CUR_V} found locally!-----------------------"
 fi
 }
 
 install() {
 #Install CoreFreq
-/sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-1.txz"
+/sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz"
 /sbin/depmod -a
 /sbin/modprobe corefreqk
 }
@@ -119,19 +145,24 @@ start_daemon() {
 echo "/usr/bin/corefreqd" | at now
 }
 
-#Check if CoreFreq is already downloaded
+#Check if CoreFreq is on the latest version and already downloaded
 check
 
 if [ ! -z "$(lsmod | grep "corefreqk")" ]; then
-  echo
-  echo "----------------Nothing to do, CoreFreq is already installed!-----------------"
-  echo
+  if [ "${CUR_V}" != "${LAT_V}" ]; then
+    echo
+    echo "-------Please restart your server to install the new CoreFreq v${LAT_V}!------"
+  else
+    echo
+    echo "---Nothing to do, CoreFreq is already installed and on the latest v${CUR_V}!---"
+    echo
+  fi
 else
   echo
-  echo "---------------------Installing CoreFreq, please wait...!---------------------"
+  echo "------------------Installing CoreFreq v${LAT_V}, please wait...!----------------"
   install >/dev/null
   echo
-  echo "--------------------Installation of CoreFreq successful-----------------------"
+  echo "----------------Installation of CoreFreq v${LAT_V} successful!------------------"
   echo
 fi
 
