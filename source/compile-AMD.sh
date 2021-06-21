@@ -12,9 +12,9 @@ cp ${DATA_DIR}/corefreq/CoreFreq/corefreqk.ko ${DATA_DIR}/corefreq/AMD/lib/modul
 #Compress modules
 xz --check=crc32 --lzma2 ${DATA_DIR}/corefreq/AMD/lib/modules/${UNAME}/extra/corefreqk.ko
 
-PLUGIN_NAME="corefreq_AMD"
+export PLUGIN_NAME="corefreq_AMD"
 BASE_DIR="${DATA_DIR}/corefreq/AMD"
-TMP_DIR="/tmp/${PLUGIN_NAME}_"$(echo $RANDOM)""
+export TMP_DIR="/tmp/${PLUGIN_NAME}_"$(echo $RANDOM)""
 VERSION="$(date +'%Y.%m.%d')"
 
 mkdir -p $TMP_DIR/$VERSION
