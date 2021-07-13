@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2021.06.16">
+  <!ENTITY version   "2021.07.13">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
   <!ENTITY plugin    "/boot/config/plugins/corefreq">
@@ -12,6 +12,9 @@
 <PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2021.07.13
+- Error showing up on boot in terminal fixed
 
 ###2021.06.16
 - Search for latest CoreFreq version on boot and update it if a newer version is found
@@ -93,7 +96,7 @@ rm -rf $(ls -d &plugin;/packages/${KERNEL_V%%-*}/* | grep -v "${LAT_V}")
 if [ ! -f "&plugin;/CoreFreq.png" ]; then
   wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/CoreFreq.png" "https://raw.githubusercontent.com/ich777/docker-templates/master/ich777/images/corefreq.png"
 fi
-https://github.com/ich777/unraid-corefreq/releases/download/5.10.28-Unraid/corefreq_INTEL-1.86.5-x86_64-1.txz
+
 download() {
 #Download CoreFreq
 if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ; then
