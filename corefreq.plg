@@ -2,16 +2,22 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2021.07.13">
+  <!ENTITY version   "2022.02.18">
+  <!ENTITY md5       "90110fd039115807030c841b125eedad">
+  <!ENTITY launch    "Settings/corefreq">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
   <!ENTITY plugin    "/boot/config/plugins/corefreq">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/CoreFreq">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
+<PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2022.02.18
+- Created plugin page
+- Autostart from CoreFreq must be now enabled on plugin page
 
 ###2021.07.13
 - Error showing up on boot in terminal fixed
@@ -24,6 +30,17 @@
 
 </CHANGES>
 
+<FILE Run="/bin/bash">
+<INLINE>
+rm -f $(ls &plugin;/&name;*.txz 2>/dev/null|grep -v '&version;')
+</INLINE>
+</FILE>
+
+<FILE Name="&plugin;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>&gitURL;/packages/&name;-&version;.txz</URL>
+<MD5>&md5;</MD5>
+</FILE>
+
 <FILE Name="&emhttp;/README.md">
 <INLINE>
 **CoreFreq**
@@ -31,6 +48,7 @@
 CoreFreq is a CPU low level monitoring software designed for x86_64-Processors. You can show Package and Core temps, Hot sensor, Vcore, RAM,...  
 You can also toggle SpeedStep, Clock modulation, Turbo boost, C-States demotion, C1E,...  
 It has also a built in stress test and much, much more.  
+Visit the plugin page after installing and follow the instructions.  
 Open up a unRAID Terminal and type in 'corefreq-cli' (without quotes), hit "F2" or "SPACE" to open up the menu inside CoreFreq.  
 
 Please note that not every combination of CPU and motherboard is supported!  
@@ -41,6 +59,12 @@ You can get more details here: https://github.com/cyring/CoreFreq
 
 <FILE Run="/bin/bash">
 <INLINE>
+
+#Create settings file if not found
+if [ ! -f "&plugin;/settings.cfg" ]; then
+  echo 'autostart_corefreq=false
+module_tested=false' > "&plugin;/settings.cfg"
+fi
 
 KERNEL_V="$(uname -r)"
 PACKAGE="corefreq"
@@ -93,10 +117,6 @@ fi
 rm -rf $(ls -d &plugin;/packages/* | grep -v "${KERNEL_V%%-*}")
 rm -rf $(ls -d &plugin;/packages/${KERNEL_V%%-*}/* | grep -v "${LAT_V}")
 
-if [ ! -f "&plugin;/CoreFreq.png" ]; then
-  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/CoreFreq.png" "https://raw.githubusercontent.com/ich777/docker-templates/master/ich777/images/corefreq.png"
-fi
-
 download() {
 #Download CoreFreq
 if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ; then
@@ -129,9 +149,13 @@ fi
 }
 
 install() {
-#Install CoreFreq
+#Install CoreFreq and depmod
 /sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz"
 /sbin/depmod -a
+}
+
+load_module() {
+#Load CoreFreq module
 /sbin/modprobe corefreqk
 }
 
@@ -167,26 +191,27 @@ else
   echo
   echo "----------------Installation of CoreFreq v${LAT_V} successful!------------------"
   echo
-fi
-
-if [ ! -z "$(pidof corefreqd)" ]; then
-  echo
-  echo "--------------Nothing to do, CoreFreq Daemon is already started!--------------"
-  echo
-else
-  echo
-  patch >/dev/null
-  echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
-  start_daemon >/dev/null
-  echo
-fi
-
-#Install icon
-if [ ! -f "&emhttp;/images/CoreFreq.png" ]; then
-  if [ ! -d "&emhttp;/images" ]; then
-    mkdir -p &emhttp;/images
+  if [ "$(cat &plugin;/settings.cfg | grep "autostart_corefreq=" | cut -d '=' -f2)" == "true" ]; then
+    load_module >/dev/null
+  else
+    echo
+    echo "-----------Autostart from CoreFreq disabled! Please see Plugin page!------------"
+    echo
   fi
-  cp &plugin;/CoreFreq.png &emhttp;/images/
+fi
+
+if [ "$(cat &plugin;/settings.cfg | grep "autostart_corefreq=" | cut -d '=' -f2)" == "true" ]; then
+  if [ ! -z "$(pidof corefreqd)" ]; then
+    echo
+    echo "--------------Nothing to do, CoreFreq Daemon is already started!--------------"
+    echo
+  else
+    echo
+    patch >/dev/null
+    echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
+    start_daemon >/dev/null
+    echo
+  fi
 fi
 
 </INLINE>
@@ -200,7 +225,6 @@ echo "-------Uninstalling CoreFreq--------"
 echo "------------------------------------"
 # Remove plugin related files
 kill $(pidof corefreqd)
-modprobe -rf corefreqk
 rm -rf &emhttp;
 rm -rf &plugin;
 echo
