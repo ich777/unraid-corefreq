@@ -42,7 +42,7 @@ make clean
 git checkout $COREFREQ_V
 
 # Compile Intel version
-make MSR_CORE_PERF_UC=MSR_CORE_PERF_FIXED_CTR1 MSR_CORE_PERF_URC=MSR_CORE_PERF_FIXED_CTR2 -j${CPU_COUNT}
+make -j${CPU_COUNT}
 cp ${DATA_DIR}/corefreq/CoreFreq/corefreq-cli ${DATA_DIR}/corefreq/CoreFreq/corefreqd ${DATA_DIR}/corefreq/INTEL/usr/bin/
 chmod 0755 ${DATA_DIR}/corefreq/INTEL/usr/bin/*
 cp ${DATA_DIR}/corefreq/CoreFreq/corefreqk.ko ${DATA_DIR}/corefreq/INTEL/lib/modules/${UNAME}/extra/
