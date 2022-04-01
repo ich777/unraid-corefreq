@@ -15,6 +15,9 @@
 
 <CHANGES>
 
+###2022.04.01
+- Bugfix, remove package on plugin removal
+
 ###2022.02.18
 - Created plugin page
 - Autostart from CoreFreq must be now enabled on plugin page
