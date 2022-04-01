@@ -225,6 +225,7 @@ echo "-------Uninstalling CoreFreq--------"
 echo "------------------------------------"
 # Remove plugin related files
 kill $(pidof corefreqd)
+removepkg &name;-&version;
 rm -rf &emhttp;
 rm -rf &plugin;
 echo
