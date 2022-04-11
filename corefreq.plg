@@ -15,6 +15,9 @@
 
 <CHANGES>
 
+###2022.04.11
+- Added Plugin Update Helper when up-/downgrading unRAID version
+
 ###2022.04.01
 - Bugfix, remove package on plugin removal
 
