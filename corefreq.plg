@@ -2,18 +2,23 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2022.04.11">
+  <!ENTITY version   "2022.07.21">
   <!ENTITY md5       "90110fd039115807030c841b125eedad">
   <!ENTITY launch    "Settings/corefreq">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
   <!ENTITY plugin    "/boot/config/plugins/corefreq">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/CoreFreq">
+  <!ENTITY packages  "&plugin;/packages">
 ]>
 
 <PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2022.07.21
+- Save md5 in packages directory
+- Cleanup
 
 ###2022.04.11
 - Added Plugin Update Helper when up-/downgrading unRAID version
@@ -66,70 +71,15 @@ You can get more details here: https://github.com/cyring/CoreFreq
 <FILE Run="/bin/bash">
 <INLINE>
 
-#Create settings file if not found
-if [ ! -f "&plugin;/settings.cfg" ]; then
-  echo 'autostart_corefreq=false
-module_tested=false' > "&plugin;/settings.cfg"
-fi
-
-KERNEL_V="$(uname -r)"
-PACKAGE="corefreq"
-DL_URL="https://github.com/ich777/unraid-corefreq/releases/download/$KERNEL_V"
-
-#Determine CPU manufacturer
-VENDOR=$(lscpu | awk '/Vendor ID/{print $3}')
-if [ "${VENDOR}" == "GenuineIntel" ]; then
-  VENDOR="INTEL"
-elif [ "${VENDOR}" == "AuthenticAMD" ]; then
-   VENDOR="AMD"
-else
- echo "---Unknown CPU vendor: ${VENDOR}, only Intel and AMD are supported!---"
- exit 1
-fi
-
-#Wait for Network and timeout after 30 seconds
-HOST="8.8.8.8"
-for i in {1..10}; do
-  ping -c1 $HOST &amp;> /dev/null &amp;&amp; break;
-done
-
-#Get latest version from CoreFreq and create directory
-LAT_V="$(wget -qO- https://api.github.com/repos/ich777/unraid-corefreq/releases/tags/${KERNEL_V} | jq -r '.assets[].name' | grep 'corefreq_'${VENDOR}'' | grep -E -v '\.md5$' | cut -d '-' -f2 | sort -V | tail -1)"
-
-if [ ! -d "&plugin;/packages/${KERNEL_V%%-*}" ]; then
-  mkdir -p "&plugin;/packages/${KERNEL_V%%-*}"
-  CUR_V=""
-else
-  CUR_V="$(ls &plugin;/packages/${KERNEL_V%%-*} | cut -d '-' -f2)"
-fi
-
-#Check if version where fetched correctly
-if [ -z "$LAT_V" ]; then
-  if [ -z "CUR_V" ]; then
-    echo
-    echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
-    echo "---Something went horribly wrong, please contact the developer of the plugin!---"
-    echo
-    exit 1
-  else
-    LAT_V="${CUR_V}"
-    echo
-    echo "---Can't get latest version from Corefreq, using installed version v$CUR_V!---"
-    echo
-  fi
-fi
-
-#Check for old packages
-rm -rf $(ls -d &plugin;/packages/* | grep -v "${KERNEL_V%%-*}")
-rm -rf $(ls -d &plugin;/packages/${KERNEL_V%%-*}/* | grep -v "${LAT_V}")
-
 download() {
-#Download CoreFreq
-if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ; then
-  if [ "$(md5sum "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" | cut -d ' ' -f1)" != "$(wget -qO- "${DL_URL}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz.md5" | cut -d ' ' -f1)" ]; then
+# Download CoreFreq
+if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}" "${DL_URL}/${LAT_PACKAGE}" ; then
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}.md5" "${DL_URL}/${LAT_PACKAGE}.md5"
+  if [ "$(md5sum &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE} | awk '{print $1}')" != "$(cat &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}.md5 | awk '{print $1}')" ]; then
     echo
     echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR------"
     echo "--------------------------------CHECKSUM ERROR!---------------------------------"
+    rm -rf &plugin; &emhttp;
     exit 1
   fi
   echo
@@ -138,35 +88,40 @@ else
   echo
   echo "-----ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR-----"
   echo "--------------------------Can't download CoreFreq------------------------------"
+  rm -rf &plugin; &emhttp;
   exit 1
 fi
 }
 
 check() {
-if [ ! -f "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz" ]; then
+if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
   echo
-  echo "----------------Downloading CoreFreq v${LAT_V}, please wait...!---------------"
+  echo "----------------Downloading CoreFreq v$(echo $LAT_PACKAGE | cut -d '-' -f2), please wait...!---------------"
   echo "----------This could take some time, please don't close this window!----------"
   download
 else
   echo
-  echo "----------------------CoreFreq v${CUR_V} found locally!-----------------------"
+  echo "----------------------CoreFreq v$(echo $LAT_PACKAGE | cut -d '-' -f2) found locally!-----------------------"
 fi
 }
 
+get_version() {
+LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/ich777/unraid-corefreq/releases/tags/${KERNEL_V} | jq -r '.assets[].name' | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+}
+
 install() {
-#Install CoreFreq and depmod
-/sbin/installpkg "&plugin;/packages/${KERNEL_V%%-*}/${PACKAGE}_${VENDOR}-${LAT_V}-x86_64-1.txz"
+# Install CoreFreq and depmod
+/sbin/installpkg "&packages;/${KERNEL_V%%-*}/${PACKAGE}*.txz"
 /sbin/depmod -a
 }
 
 load_module() {
-#Load CoreFreq module
+# Load CoreFreq module
 /sbin/modprobe corefreqk
 }
 
 patch() {
-#Patching files and creating necessary direcotries/symlinks
+# Patching files and creating necessary direcotries/symlinks
 if [ ! -d /root/.config/CoreFreq ]; then
   mkdir -p /root/.config/CoreFreq
 fi
@@ -174,37 +129,105 @@ ln -s &plugin;/corefreq.cfg /root/.config/CoreFreq/corefreq.cfg
 }
 
 start_daemon() {
-#Start CoreFreq Daemon
+# Start CoreFreq Daemon
 echo "/usr/bin/corefreqd" | at now &gt; /dev/null 2&gt;&amp;1
 }
+
+# Determine CPU manufacturer
+VENDOR="$(lscpu | awk '/Vendor ID/{print $3}' | head -1)"
+if [ "${VENDOR}" == "GenuineIntel" ]; then
+  VENDOR="INTEL"
+elif [ "${VENDOR}" == "AuthenticAMD" ]; then
+   VENDOR="AMD"
+else
+  echo "---Unknown CPU vendor: ${VENDOR}, only Intel and AMD are supported!---"
+  rm -rf &plugin; &emhttp;
+  exit 1
+fi
+
+# Define Variables
+KERNEL_V="$(uname -r)"
+PACKAGE="corefreq_${VENDOR}"
+DL_URL="https://github.com/ich777/unraid-corefreq/releases/download/$KERNEL_V"
+
+if [ ! -d "&packages;/${KERNEL_V%%-*}" ]; then
+  mkdir -p "&packages;/${KERNEL_V%%-*}"
+  CUR_V=""
+else
+  CUR_V="$(ls &packages;/${KERNEL_V%%-*} 2&gt;/dev/null | grep -E -v '\.md5' | sort -V | tail -1)"
+fi
+
+# Check for old package files and move them if found
+if ls -d &packages;/${KERNEL_V%%-*}/* | grep -q "\-x86_64-1.txz" ; then
+  rm -rf &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz.md5
+  mv &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz
+  md5sum &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz | awk '{print $1}' > &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz.md5
+  CUR_V="$(ls &packages;/${KERNEL_V%%-*} 2&gt;/dev/null | grep -E -v '\.md5' | sort -V | tail -1)"
+fi
+
+# Create settings file if not found
+if [ ! -f "&plugin;/settings.cfg" ]; then
+  echo 'autostart_corefreq=false
+module_tested=false' > "&plugin;/settings.cfg"
+fi
+
+# Check if Autostart is enabled
+PLG_AUTOSTART="$(cat &plugin;/settings.cfg | grep "autostart_corefreq=" | cut -d '=' -f2)"
+
+#Check if version where fetched correctly
+if [ -z "$CUR_V" ]; then
+  get_version
+  if [ -z "$LAT_PACKAGE" ]; then
+    echo
+    echo "------ERROR - ERROR - ERROR - ERROR - ERROR - ERROR - ERROR--------"
+    echo "---Can't get latest CoreFreq version and found no local package!---"
+    echo
+    rm -rf &plugin; &emhttp;
+    exit 1
+  fi
+else
+  LAT_PACKAGE="${CUR_V}"
+fi
+
+#Check for old packages
+rm -rf $(ls -d &packages;/* | grep -v "${KERNEL_V%%-*}")
+rm -rf $(find &packages;/${KERNEL_V%%-*}/ -type f -maxdepth 1 | grep -v "${LAT_PACKAGE}")
 
 #Check if CoreFreq is on the latest version and already downloaded
 check
 
-if [ ! -z "$(lsmod | grep "corefreqk")" ]; then
-  if [ "${CUR_V}" != "${LAT_V}" ]; then
-    echo
-    echo "-------Please restart your server to install the new CoreFreq v${LAT_V}!------"
-  else
-    echo
-    echo "---Nothing to do, CoreFreq is already installed and on the latest v${CUR_V}!---"
-    echo
-  fi
-else
+if ! modinfo corefreqk -0 >/dev/null 2>&amp;1 ; then
   echo
-  echo "------------------Installing CoreFreq v${LAT_V}, please wait...!----------------"
+  echo "------------------Installing CoreFreq v$(echo $LAT_PACKAGE | cut -d '-' -f2), please wait...!----------------"
   install >/dev/null
   echo
-  echo "----------------Installation of CoreFreq v${LAT_V} successful!------------------"
+fi
+
+if [ "${PLG_AUTOSTART}" == "true" ]; then
+  load_module >/dev/null
+else
   echo
-  if [ "$(cat &plugin;/settings.cfg | grep "autostart_corefreq=" | cut -d '=' -f2)" == "true" ]; then
-    load_module >/dev/null
+  echo "-----------Autostart from CoreFreq disabled! Please see Plugin page!------------"
+  echo
+fi
+
+if [ "${PLG_AUTOSTART}" == "true" ]; then
+  if [ ! -z "$(pidof corefreqd)" ]; then
+    echo
+    echo "--------------Nothing to do, CoreFreq Daemon is already started!--------------"
+    echo
   else
     echo
-    echo "-----------Autostart from CoreFreq disabled! Please see Plugin page!------------"
+    patch >/dev/null
+    echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
+    start_daemon >/dev/null
     echo
   fi
 fi
+
+echo
+echo "----------------Installation of CoreFreq v$(echo $LAT_PACKAGE | cut -d '-' -f2) successful!------------------"
+echo
 
 #Check if Plugin Update Helper is downloaded and up-to-date
 if [ ! -f &plugin;/plugin_update_helper ]; then
@@ -244,20 +267,6 @@ fi
 #Start Plugin Update Helper
 if [ -z "$(ps aux | grep -E "inotifywait -q /boot/changes.txt -e move_self,delete_self" | grep -v "grep -E inotifywait" | awk '{print $2}')" ]; then
   echo "/usr/bin/plugin_update_helper" | at now &gt; /dev/null 2&gt;&amp;1
-fi
-
-if [ "$(cat &plugin;/settings.cfg | grep "autostart_corefreq=" | cut -d '=' -f2)" == "true" ]; then
-  if [ ! -z "$(pidof corefreqd)" ]; then
-    echo
-    echo "--------------Nothing to do, CoreFreq Daemon is already started!--------------"
-    echo
-  else
-    echo
-    patch >/dev/null
-    echo "-------------------Starting CoreFreq Daemon, please wait...!------------------"
-    start_daemon >/dev/null
-    echo
-  fi
 fi
 
 </INLINE>
