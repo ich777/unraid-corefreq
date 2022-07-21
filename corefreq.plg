@@ -157,12 +157,10 @@ else
   CUR_V="$(ls &packages;/${KERNEL_V%%-*} 2&gt;/dev/null | grep -E -v '\.md5' | sort -V | tail -1)"
 fi
 
-# Check for old package files and move them if found
+# Check for old package files and remove them if found
 if ls -d &packages;/${KERNEL_V%%-*}/* | grep -q "\-x86_64-1.txz" ; then
-  rm -rf &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz.md5
-  mv &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz
-  md5sum &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz | awk '{print $1}' > &packages;/${KERNEL_V%%-*}/${PACKAGE}-$(echo $CUR_V | cut -d '-' -f2)-${KERNEL_V}-1.txz.md5
-  CUR_V="$(ls &packages;/${KERNEL_V%%-*} 2&gt;/dev/null | grep -E -v '\.md5' | sort -V | tail -1)"
+  rm -rf &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz.md5
+  CUR_V=""
 fi
 
 # Create settings file if not found
