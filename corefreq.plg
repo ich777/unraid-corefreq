@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2022.07.21">
+  <!ENTITY version   "2023.01.26">
   <!ENTITY md5       "90110fd039115807030c841b125eedad">
   <!ENTITY launch    "Settings/corefreq">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
@@ -15,6 +15,10 @@
 <PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2023.01.26
+- Fixed not downloading newer packages on boot
+- Fixed plugin installation error when there is no active internet connection on boot
 
 ###2022.07.21
 - Save md5 in packages directory
@@ -94,7 +98,7 @@ fi
 }
 
 check() {
-if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
+if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${LAT_PACKAGE}" ; then
   echo
   echo "----------------Downloading CoreFreq v$(echo $LAT_PACKAGE | cut -d '-' -f2), please wait...!---------------"
   echo "----------This could take some time, please don't close this window!----------"
@@ -155,12 +159,6 @@ if [ ! -d "&packages;/${KERNEL_V%%-*}" ]; then
   CUR_V=""
 else
   CUR_V="$(ls -p &packages;/${KERNEL_V%%-*} 2&gt;/dev/null | grep -E -v '\.md5' | sort -V | tail -1)"
-fi
-
-# Check for old package files and remove them if found
-if ls -d &packages;/${KERNEL_V%%-*}/* | grep -q "\-x86_64-1.txz" ; then
-  rm -rf &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz &packages;/${KERNEL_V%%-*}/*-x86_64-1.txz.md5
-  CUR_V=""
 fi
 
 # Create settings file if not found
