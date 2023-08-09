@@ -1,0 +1,38 @@
+Menu="corefreq:2"
+Title="Module Options"
+Tag="puzzle-piece"
+---
+<h3>This page shows you a list of all available options from the 'corefreqk' Kernel module to make changes between reboots persistent.<br></h3>
+<p>To apply any of these options create the file <code>/boot/config/modprobe.d/corefreqk.conf</code> with the following content:</p>
+<p><pre style="width: 500px;"><code>options corefreqk TurboBoost_Enable=1</code></pre></p>
+<br>
+<p>If you want to apply more than one option then the file should look like as follows:</p>
+<p><pre style="width: 500px;"><code>options corefreqk TurboBoost_Enable=1 SpeedStep_Enable=0</code></pre></p>
+<br>
+<p><b>WARNING:</b> Please note that if your system won't boot anymore because of a wrong set option, you have to delete the file <code>/boot/config/modprobe.d/corefreqk.conf</code>!<br>You can do that by either booting into safe mode or deleting the file from the USB Boot device itself.</p>
+<br>
+<p><h2>Available options:</h2></p>
+<br>
+<?php
+$modinfo = shell_exec('modinfo corefreqk');
+$data = explode("\n", $modinfo);
+
+$tableRows = array();
+
+foreach ($data as $line) {
+  if (strpos($line, "parm:") === 0) {
+    $parts = explode(":", $line, 3);
+    if (count($parts) === 3) {
+      $Options[] = array(trim($parts[1]), trim($parts[2]));
+    }
+  }
+}
+
+echo "<table style=\"width: 80%; max-width: 600px;\">";
+echo "<tr><td><b>Option</b></td><td><b>Description</b></td></tr>";
+foreach ($Options as $row) {
+  echo "<tr><td><code>{$row[0]}</code></td><td>{$row[1]}</td></tr>";
+}
+echo "</table>";
+?>
+
