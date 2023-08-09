@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2023.01.26">
-  <!ENTITY md5       "90110fd039115807030c841b125eedad">
+  <!ENTITY version   "2023.08.09">
+  <!ENTITY md5       "705a267ee39bdc901779ffd870fbeefd">
   <!ENTITY launch    "Settings/corefreq">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
@@ -15,6 +15,9 @@
 <PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2023.08.09
+- Added Module option page and description how to make settings persistent
 
 ###2023.01.26
 - Fixed not downloading newer packages on boot
