@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "CoreFreq">
   <!ENTITY author    "ich777">
-  <!ENTITY version   "2023.08.10">
-  <!ENTITY md5       "45fb325ec8fe80cee471766036e3b10c">
+  <!ENTITY version   "2024.01.28">
+  <!ENTITY md5       "2172c65c5dff54fa94f0c452e15c226d">
   <!ENTITY launch    "Settings/corefreq">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-corefreq/master">
   <!ENTITY pluginURL "&gitURL;/corefreq.plg">
@@ -15,6 +15,9 @@
 <PLUGIN  name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.2" support="https://forums.unraid.net/topic/109314-plugin-corefreq/">
 
 <CHANGES>
+
+###2024.01.28
+- Update icon and logo
 
 ###2023.08.10
 - Corrected typo in examples
